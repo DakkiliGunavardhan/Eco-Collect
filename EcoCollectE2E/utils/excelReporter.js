@@ -21,28 +21,11 @@ async function getExcelJS() {
   }
 }
 
-async function getMocha() {
-  try {
-    const mod = await import('mocha');
-    return mod.default || mod;
-  } catch (e) {
-    try {
-      const relPath = path.resolve(__dirname, '../../web/node_modules/mocha/lib/mocha.js');
-      const mod = await import(`file://${relPath}`);
-      return mod.default || mod;
-    } catch (err) {
-      throw new Error(`Could not resolve mocha module: ${err.message}`);
-    }
-  }
-}
+import mocha from 'mocha';
 
-let BaseReporter;
-try {
-  const mochaMod = await getMocha();
-  BaseReporter = mochaMod.reporters ? mochaMod.reporters.Base : class {};
-} catch (e) {
-  BaseReporter = class {};
-}
+const BaseReporter = (mocha && mocha.reporters && mocha.reporters.Base)
+  ? mocha.reporters.Base
+  : class {};
 
 export default class ExcelReporter extends BaseReporter {
   constructor(runner) {
