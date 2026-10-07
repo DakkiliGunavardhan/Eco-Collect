@@ -20,10 +20,16 @@ jobs:
   e2e-and-deploy:
     name: Web E2E (350 Tests), Security Audit & Native Pages Deploy
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
+
+      - name: Setup GitHub Pages Environment
+        uses: actions/configure-pages@v5
 
       - name: Setup Node.js Environment
         uses: actions/setup-node@v4
