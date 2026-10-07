@@ -1,0 +1,57 @@
+name: EcoCollect QA Automation Tests
+
+on:
+  push:
+    branches: [ "**" ] # Trigger on all branch pushes
+  pull_request:
+    branches: [ "**" ] # Trigger on all pull requests
+
+jobs:
+  qa-automation-testing:
+    name: Run Selenium E2E & Static Audits
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install Web App Dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Build Web Application
+        working-directory: web
+        run: npm run build
+
+      - name: Verify Chrome Installation
+        run: |
+          google-chrome --version
+          which google-chrome
+
+      - name: Start Background Web Server
+        working-directory: web
+        run: |
+          npx http-server dist -p 5173 &
+          echo "Waiting for local static server to spin up..."
+          sleep 3
+
+      - name: Execute Selenium E2E Tests & Audits
+        working-directory: web
+        run: npm run test:e2e
+        env:
+          TEST_TARGET_URL: http://localhost:5173
+
+      - name: Upload Test Report Excel File
+        uses: actions/upload-artifact@v4
+        if: always() # Upload report even if tests fail so developers can inspect
+        with:
+          name: EcoCollect-QA-Automation-Test-Report
+          path: web/test_report.xlsx
+          if-no-files-found: error

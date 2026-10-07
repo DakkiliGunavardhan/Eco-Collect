@@ -1,0 +1,60 @@
+name: EcoCollect Backend Security Review Pipeline
+
+on:
+  push:
+    branches: [ "main", "master", "**" ]
+  pull_request:
+    branches: [ "main", "master", "**" ]
+  workflow_dispatch:
+
+jobs:
+  backend-security-review:
+    name: Backend API Vulnerability Audit & Policy Gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install EcoCollectE2E Helper Dependencies
+        working-directory: EcoCollectE2E
+        run: npm install exceljs --no-save || true
+
+      - name: Execute Backend Security Suite Scan
+        run: |
+          export NODE_PATH=$PWD/EcoCollectE2E/node_modules:$PWD/web/node_modules
+          node backend/scripts/generateSecuritySuite.js
+
+      - name: Zero-Critical Security Policy Gate Check (Backend)
+        run: |
+          CRITICAL_COUNT=$(grep -i "Critical Severity" executive-summary.md | grep -o "[0-9]\+" | head -n 1 || echo "0")
+          echo "Backend API Critical Vulnerability Count: $CRITICAL_COUNT"
+          if [ "$CRITICAL_COUNT" -gt 0 ]; then
+            echo "❌ CRITICAL SECURITY POLICY VIOLATION: $CRITICAL_COUNT critical vulnerabilities detected!"
+            exit 1
+          fi
+          echo "✔ Zero Critical Policy Gate Passed (0 Critical Findings)."
+
+      - name: Append Backend Executive Summary to Step Summary
+        if: always()
+        run: |
+          if [ -f "executive-summary.md" ]; then
+            cat executive-summary.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Backend Security Audit Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: EcoCollect-Backend-Security-Reports
+          path: |
+            findings.xlsx
+            security-review.md
+            dependency-report.md
+            executive-summary.md
+            Security_Reports/

@@ -1,0 +1,14 @@
+{
+  "name": "ecocollect-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "mocha tests/mega_web_350.test.js --reporter utils/excelReporter.js --timeout 120000"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "mocha": "^10.8.2",
+    "selenium-webdriver": "^4.46.0"
+  }
+}
